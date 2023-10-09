@@ -6,19 +6,19 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"com.gedalias/domain"
 	livrorepository "com.gedalias/infra/livrorepository"
+	"github.com/gorilla/mux"
 )
 
-func listarLivros(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-type", "application/json")
+func ListarTodosLivros(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-type", "application/json")
 	json.NewEncoder(w).Encode(livrorepository.ListaLivros())
 }
 
-func cadastrarLivros(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-type", "application/json")
+func CadastrarLivros(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-type", "application/json")
 
 	body, error := io.ReadAll(r.Body)
 
@@ -37,10 +37,10 @@ func cadastrarLivros(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(livroCriado)
 }
 
-func excluirLivro(w http.ResponseWriter, r *http.Request) {
-	partes := strings.Split(r.URL.Path, "/")
+func ExcluirLivro(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 
-	id, _ := strconv.Atoi(partes[2])
+	id, _ := strconv.Atoi(params["id"])
 
 	error := livrorepository.ExcluirLivro(id)
 
@@ -53,10 +53,10 @@ func excluirLivro(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func modificarLivro(w http.ResponseWriter, r *http.Request) {
-	partes := strings.Split(r.URL.Path, "/")
+func ModificarLivro(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 
-	id, error := strconv.Atoi(partes[2])
+	id, error := strconv.Atoi(params["id"])
 
 	if error != nil {
 		fmt.Printf("Erro ao atualizar o livro. Erro: %s\n", error.Error())
@@ -94,15 +94,15 @@ func modificarLivro(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(livroAlterado)
 }
 
-func consultarLivro(w http.ResponseWriter, r *http.Request) {
-	partes := strings.Split(r.URL.Path, "/")
+func ConsultarLivro(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 
-	if len(partes) > 3 {
+	if params["id"] == "" {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	id, _ := strconv.Atoi(partes[2])
+	id, _ := strconv.Atoi(params["id"])
 
 	livroSelecionado, error := livrorepository.BuscarLivro(id)
 
@@ -114,25 +114,4 @@ func consultarLivro(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-type", "application/json")
 	json.NewEncoder(w).Encode(livroSelecionado)
-}
-
-func LivroController(w http.ResponseWriter, r *http.Request) {
-	partes := strings.Split(r.URL.Path, "/")
-	switch r.Method {
-	case "GET":
-		if len(partes) >= 3 {
-			consultarLivro(w, r)
-		} else {
-			listarLivros(w, r)
-		}
-	case "POST":
-		cadastrarLivros(w, r)
-	case "DELETE":
-		excluirLivro(w, r)
-	case "PUT":
-		modificarLivro(w, r)
-	default:
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Método não reconhecido")
-	}
 }

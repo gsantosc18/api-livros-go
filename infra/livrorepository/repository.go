@@ -6,7 +6,9 @@ import (
 	"com.gedalias/domain"
 )
 
-var livros []domain.Livro = []domain.Livro{}
+var livros []domain.Livro = []domain.Livro{
+	*domain.NewLivro(1, "Teste", "Meu teste"),
+}
 
 var nextId int = len(livros)
 
