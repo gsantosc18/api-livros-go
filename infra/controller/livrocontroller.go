@@ -89,7 +89,7 @@ func ModificarLivro(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-type", "application/json")
+	w.Header().Add("Content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(livroAlterado)
 }
@@ -112,6 +112,14 @@ func ConsultarLivro(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-type", "application/json")
+	w.Header().Add("Content-type", "application/json")
 	json.NewEncoder(w).Encode(livroSelecionado)
+}
+
+func LivroRouter(router *mux.Router) {
+	router.HandleFunc("/livros", ListarTodosLivros).Methods("GET")
+	router.HandleFunc("/livros/{id}", ConsultarLivro).Methods("GET")
+	router.HandleFunc("/livros", CadastrarLivros).Methods("POST")
+	router.HandleFunc("/livros/{id}", ModificarLivro).Methods("PUT")
+	router.HandleFunc("/livros/{id}", ExcluirLivro).Methods("DELETE")
 }
