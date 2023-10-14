@@ -4,17 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
-	"com.gedalias/domain"
+	domain "com.gedalias/domain"
+	dto "com.gedalias/infra/controller/dto"
 	livrorepository "com.gedalias/infra/livrorepository"
 	"github.com/gorilla/mux"
 )
 
 func ListarTodosLivros(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-type", "application/json")
-	json.NewEncoder(w).Encode(livrorepository.ListaLivros())
+	livros, err := livrorepository.ListaLivros()
+
+	if err != nil {
+		log.Println("Houve um erro interno na listagem dos livros. Error: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(livros)
 }
 
 func CadastrarLivros(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +41,13 @@ func CadastrarLivros(w http.ResponseWriter, r *http.Request) {
 	var novoLivro domain.Livro
 	json.Unmarshal(body, &novoLivro)
 
-	livroCriado := livrorepository.CreateNewLivro(novoLivro)
+	livroCriado, err := livrorepository.CreateNewLivro(novoLivro)
+
+	if err != nil {
+		log.Println("Houve um erro interno na criação do novo livro. Error: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(livroCriado)
@@ -56,22 +72,28 @@ func ExcluirLivro(w http.ResponseWriter, r *http.Request) {
 func ModificarLivro(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	id, error := strconv.Atoi(params["id"])
+	id, err := strconv.Atoi(params["id"])
 
-	if error != nil {
-		fmt.Printf("Erro ao atualizar o livro. Erro: %s\n", error.Error())
+	if err != nil {
+		log.Printf("Erro ao atualizar o livro. Erro: %s\n", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	corpo, error := io.ReadAll(r.Body)
+	if !livrorepository.ExistLivro(id) {
+		log.Println("O liro não foi encontrado para atualização.")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
-	if error != nil {
+	corpo, err := io.ReadAll(r.Body)
+
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	var livroModificado domain.Livro
+	var livroModificado dto.UpdateLivroDTO
 
 	errorJson := json.Unmarshal(corpo, &livroModificado)
 
@@ -81,11 +103,11 @@ func ModificarLivro(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	livroAlterado, error := livrorepository.AtualizaLivro(id, livroModificado)
+	livroAlterado, err := livrorepository.AtualizaLivro(id, livroModificado.Domain())
 
-	if error != nil {
-		fmt.Printf("Erro ao atualizar o livro. Erro: %s\n", error.Error())
-		w.WriteHeader(http.StatusNotFound)
+	if err != nil {
+		fmt.Printf("Erro ao atualizar o livro. Erro: %s\n", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -104,13 +126,12 @@ func ConsultarLivro(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := strconv.Atoi(params["id"])
 
-	livroSelecionado, error := livrorepository.BuscarLivro(id)
-
-	if error != nil {
-		fmt.Printf("Erro ao consultar o livro. Erro: %s\n", error.Error())
+	if !livrorepository.ExistLivro(id) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	livroSelecionado := livrorepository.BuscarLivro(id)
 
 	w.Header().Add("Content-type", "application/json")
 	json.NewEncoder(w).Encode(livroSelecionado)

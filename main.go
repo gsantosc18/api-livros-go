@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 
 	controller "com.gedalias/infra/controller"
+	"com.gedalias/infra/database"
 )
 
 func homePage(w http.ResponseWriter, r *http.Request) {
@@ -16,6 +17,10 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
+
+	fmt.Println("iniciando o banco de dados...")
+
+	database.GetInstance()
 
 	fmt.Println("carregando as rotas...")
 

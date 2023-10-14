@@ -1,9 +1,9 @@
 package domain
 
 type Livro struct {
-	Id     int
-	Titulo string
-	Autor  string
+	Id     int    `json:"id"`
+	Titulo string `json:"titulo"`
+	Autor  string `json:"autor"`
 }
 
 func NewLivro(id int, titulo, autor string) *Livro {
